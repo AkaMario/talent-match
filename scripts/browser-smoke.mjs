@@ -65,7 +65,7 @@ async function textIncludes(text) {
 }
 async function clickText(text) {
   return js(
-    `(()=>{const button=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()===${JSON.stringify(text)});if(!button)throw Error('Botón no encontrado');button.click();return true;})()`,
+    `(()=>{const button=[...document.querySelectorAll('button,a[href]')].find(b=>b.textContent.trim()===${JSON.stringify(text)});if(!button)throw Error('Botón no encontrado');button.click();return true;})()`,
   );
 }
 async function screenshot(name) {
@@ -122,6 +122,9 @@ try {
   });
   await command("Runtime.enable");
   await command("Page.enable");
+  await command("Emulation.setEmulatedMedia", {
+    features: [{ name: "prefers-reduced-motion", value: "reduce" }],
+  });
   await command("Emulation.setDeviceMetricsOverride", {
     width: 1440,
     height: 1000,
@@ -133,9 +136,28 @@ try {
   await waitFor(() => textIncludes("Ingresar a TalentMatch"), "landing");
   await screenshot("01-inicio");
   await login("estudiante");
+  assert.equal(await js("location.pathname"), "/estudiante");
   await screenshot("02-estudiante");
   await clickText("Explorar prácticas");
   await waitFor(() => textIncludes("Encuentra tu próxima práctica"), "listado");
+  assert.equal(await js("location.pathname"), "/estudiante/practicas");
+  await command("Page.navigate", { url: `${base}/estudiante/practicas` });
+  await waitFor(
+    () => textIncludes("Encuentra tu próxima práctica"),
+    "recarga de ruta directa",
+  );
+  assert.equal(await js("location.pathname"), "/estudiante/practicas");
+  await command("Page.navigate", { url: `${base}/empresa/candidatos` });
+  await waitFor(
+    () => textIncludes("Hola, Mariana"),
+    "redirección del rol estudiante",
+  );
+  assert.equal(await js("location.pathname"), "/estudiante");
+  await clickText("Explorar prácticas");
+  await waitFor(
+    () => textIncludes("Encuentra tu próxima práctica"),
+    "regreso a prácticas",
+  );
   await js(
     `document.querySelector('button[aria-label="Ver Practicante de análisis de datos"]').click()`,
   );
@@ -145,6 +167,14 @@ try {
   await js(`document.querySelector('button[aria-label="Cerrar"]').click()`);
   await clickText("Mi perfil");
   await waitFor(() => textIncludes("Tus documentos"), "perfil");
+  assert.equal(await js("location.pathname"), "/estudiante/perfil");
+  await js("history.back()");
+  await waitFor(
+    () => textIncludes("Encuentra tu próxima práctica"),
+    "navegación atrás",
+  );
+  await js("history.forward()");
+  await waitFor(() => textIncludes("Tus documentos"), "navegación adelante");
   const fileInput = await command("DOM.getDocument");
   const query = await command("DOM.querySelector", {
     nodeId: fileInput.root.nodeId,
@@ -167,12 +197,29 @@ try {
   });
   await clickText("Vista general");
   await waitFor(() => textIncludes("Hola, Mariana"), "panel móvil");
+  assert.equal(await js("location.pathname"), "/estudiante");
+  assert.ok(await js(`document.querySelector('nav a[aria-current="page"]').pathname === location.pathname`), "Navegación activa según la ruta");
   assert.ok(
     await js("document.documentElement.scrollWidth<=window.innerWidth"),
   );
-  assert.ok(await js(`document.querySelector('button[aria-label="Cerrar sesión en móvil"]').getBoundingClientRect().width > 0`), 'Logout disponible en móvil');
-  assert.ok(await js(`[...document.querySelectorAll('nav button')].every(b=>{const r=b.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth;})`), 'Toda la navegación visible en móvil');
-  assert.ok(await js(`document.querySelector('.stat .stat-top span').getBoundingClientRect().left - document.querySelector('.stat > strong').getBoundingClientRect().right >= 8`), 'Valor y etiqueta del perfil separados');
+  assert.ok(
+    await js(
+      `document.querySelector('button[aria-label="Cerrar sesión en móvil"]').getBoundingClientRect().width > 0`,
+    ),
+    "Logout disponible en móvil",
+  );
+  assert.ok(
+    await js(
+      `(()=>{const links=[...document.querySelectorAll('nav a')];return links.length===4&&links.every(b=>{const r=b.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth;});})()`,
+    ),
+    "Toda la navegación visible en móvil",
+  );
+  assert.ok(
+    await js(
+      `document.querySelector('.stat .stat-top span').getBoundingClientRect().left - document.querySelector('.stat > strong').getBoundingClientRect().right >= 8`,
+    ),
+    "Valor y etiqueta del perfil separados",
+  );
   await screenshot("04-estudiante-movil");
   await command("Emulation.setDeviceMetricsOverride", {
     width: 1440,
@@ -188,13 +235,22 @@ try {
     "logout estudiante",
   );
   await login("empresa");
+  assert.equal(await js("location.pathname"), "/empresa");
   await screenshot("05-empresa");
   await clickText("Candidatos");
   await waitFor(() => textIncludes("Conoce a tus candidatos"), "candidatos");
+  assert.equal(await js("location.pathname"), "/empresa/candidatos");
   await screenshot("06-candidatos");
+  await command("Page.navigate", { url: `${base}/ruta-inexistente` });
+  await waitFor(() => textIncludes("Página no encontrada"), "página 404");
+  await clickText("Volver al inicio");
+  await waitFor(
+    () => textIncludes("Hola, Nexo"),
+    "regreso al portal de empresa",
+  );
   assert.deepEqual(errors, [], "Errores JavaScript del navegador");
   console.log(
-    "✓ Login PKCE real para estudiante y empresa, navegación, brechas, carga CV, logout y diseño móvil sin desbordamiento.",
+    "✓ Login PKCE real para estudiante y empresa, rutas por rol, enlaces directos, historial, página 404, brechas, carga CV, logout y diseño móvil sin desbordamiento.",
   );
   console.log("Capturas: artifacts/screenshots/");
 } finally {

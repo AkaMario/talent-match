@@ -94,7 +94,7 @@ Este MVP no incluye portal universitario, retos con puntos, correo, recuperació
 
 | Componente | Tecnología | Responsabilidad |
 | --- | --- | --- |
-| Web | React, Vite, Nginx | Portales, formularios y navegación |
+| Web | React, React Router, Tailwind CSS, Vite, Nginx | Portales, formularios y navegación |
 | API | NestJS, TypeScript, pg | Validación, autorización y lógica del negocio |
 | Identidad | Keycloak | Usuarios, sesiones y roles |
 | Datos | PostgreSQL | Perfiles, prácticas, documentos y postulaciones |
@@ -171,3 +171,38 @@ node scripts/browser-smoke.mjs
 ```
 
 Genera capturas en `artifacts/screenshots/`. Usa `CHROME_BIN` si tu ejecutable tiene otra ruta. No cambies el contexto Docker durante las descargas o el arranque: `docker context show` indica el activo. Si usas Docker Desktop en Linux puedes fijarlo por comando con `docker --context desktop-linux compose up -d --build`.
+
+## Organización del frontend
+
+El frontend utiliza React Router para navegar mediante URLs y Tailwind CSS 4 integrado con Vite. `main.jsx` monta la aplicación; ya no contiene las vistas ni la lógica del portal.
+
+```text
+apps/web/src/
+├── main.jsx                   # Arranque, router y proveedor
+├── App.jsx                    # Estado inicial de la sesión
+├── routes/                    # Rutas, navegación y acceso por rol
+├── pages/                     # Inicio, dashboard, prácticas, perfil, postulaciones y 404
+├── layouts/                   # Estructura del portal y barra lateral
+├── components/
+│   ├── ui/                    # Marca, Button, Tag, FormField, Modal y otros elementos
+│   ├── dashboard/             # Tarjeta de indicador reutilizable
+│   └── opportunities/         # Tarjeta, detalle y publicación de prácticas
+├── context/                   # Sesión, datos compartidos y actualización tras operaciones
+├── hooks/                     # Acceso al estado del portal
+├── services/                  # Keycloak y cliente HTTP autenticado
+├── utils/                     # Fechas y conversión de habilidades
+└── styles/
+    ├── global.css             # Tailwind y tokens de diseño
+    └── legacy.css             # Estilos de pantallas pendientes de migración
+```
+
+| Vista | Estudiante | Empresa |
+| --- | --- | --- |
+| Vista general | `/estudiante` | `/empresa` |
+| Prácticas | `/estudiante/practicas` | `/empresa/practicas` |
+| Perfil | `/estudiante/perfil` | `/empresa/perfil` |
+| Postulaciones / candidatos | `/estudiante/postulaciones` | `/empresa/candidatos` |
+
+La raíz `/` muestra la bienvenida o redirige al portal de la cuenta autenticada. Una URL de otro rol redirige al inicio del portal propio; la API mantiene su validación de permisos. Las rutas desconocidas muestran la pantalla 404. Nginx devuelve `index.html` para las rutas del frontend, permitiendo abrir enlaces directos y recargar cada vista. Los detalles y la publicación de prácticas siguen utilizando modales compartidos.
+
+Tailwind ya se utiliza en los componentes UI y partes del layout. Los colores, tipografías y puntos de corte se definen con `@theme` en `global.css`. Los estilos anteriores se conservan temporalmente en la capa `components` de `legacy.css`, de forma que las utilidades de Tailwind tienen prioridad. Para componentes nuevos, usa utilidades Tailwind y reutiliza los elementos de `components/ui`; la migración de las pantallas restantes puede continuar de forma gradual.

@@ -1,0 +1,28 @@
+@import "tailwindcss";
+@import "./legacy.css";
+
+@theme {
+  --color-brand: #195c45;
+  --color-brand-hover: #237154;
+  --color-ink: #223d35;
+  --color-muted: #7a877f;
+  --color-border: #e4e9e5;
+  --color-sage: #edf4e8;
+  --color-page: #f7f9f7;
+  --font-sans: "DM Sans", sans-serif;
+  --font-display: "Manrope", sans-serif;
+  --spacing: 4px;
+  --breakpoint-sm: 620px;
+  --breakpoint-md: 850px;
+  --breakpoint-lg: 1150px;
+  --breakpoint-xl: 1450px;
+}
+
+@layer base {
+  h2, h3, h4, h5, h6 {
+    font-weight: 700;
+  }
+}
+
+/* Los estilos de pantallas pendientes viven en components; las utilidades
+   Tailwind tienen prioridad para permitir su migración por componente. */

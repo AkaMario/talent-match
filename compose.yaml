@@ -23,6 +23,13 @@ services:
     volumes:
       - pgadmin_data:/var/lib/pgadmin
       - ./infra/pgadmin/servers.json:/pgadmin4/servers.json:ro,z
+    healthcheck:
+      test:
+        [CMD, /venv/bin/python3, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1/misc/ping', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 10
     depends_on:
       postgres: { condition: service_healthy }
   keycloak:
