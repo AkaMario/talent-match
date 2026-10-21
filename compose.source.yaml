@@ -1,0 +1,6 @@
+# Alternativa al espejo: compila MinIO desde su código oficial.
+services:
+  minio:
+    image: talentmatch-minio:source
+    build:
+      context: ./infra/minio

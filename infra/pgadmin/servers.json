@@ -1,0 +1,13 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "TalentMatch PostgreSQL",
+      "Group": "TalentMatch",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "talentmatch",
+      "Username": "talentmatch",
+      "SSLMode": "prefer"
+    }
+  }
+}

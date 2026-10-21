@@ -1,0 +1,12 @@
+{
+  "name": "talentmatch",
+  "private": true,
+  "workspaces": [
+    "apps/api",
+    "apps/web"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspace apps/api"
+  }
+}
